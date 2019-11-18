@@ -4,6 +4,8 @@
 use ink_core::storage;
 use ink_lang2 as ink;
 
+use mintable::Mintable;
+
 #[ink::contract(version = "0.1.0")]
 mod htlc {
     /// Defines the storage of your contract.

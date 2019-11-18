@@ -8,6 +8,7 @@ edition = "2018"
 ink_abi = { git = "https://github.com/paritytech/ink", package = "ink_abi", default-features = false, features = ["derive"], optional = true }
 ink_core = { git = "https://github.com/paritytech/ink", package = "ink_core", default-features = false }
 ink_lang2 = { git = "https://github.com/paritytech/ink", package = "ink_lang2", default-features = false }
+mintable = { path = "mintable", default-features = false, features = ["ink-as-dependency"] }
 
 scale = { package = "parity-scale-codec", version = "1.1", default-features = false, features = ["derive"] }
 type-metadata = { git = "https://github.com/type-metadata/type-metadata.git", default-features = false, features = ["derive"], optional = true }
@@ -29,11 +30,13 @@ std = [
     "ink_core/std",
     "scale/std",
     "type-metadata/std",
+    "mintable/std"
 ]
 test-env = [
     "std",
     "ink_core/test-env",
     "ink_lang2/test-env",
+    "mintable/test-env"
 ]
 ink-generate-abi = [
     "std",
@@ -41,6 +44,7 @@ ink-generate-abi = [
     "type-metadata",
     "ink_core/ink-generate-abi",
     "ink_lang2/ink-generate-abi",
+    "mintable/ink-generate-abi"
 ]
 ink-as-dependency = []
 
@@ -52,7 +56,8 @@ overflow-checks = true
 
 [workspace]
 members = [
-	".ink/abi_gen"
+	".ink/abi_gen",
+    "mintable"
 ]
 exclude = [
 	".ink"
