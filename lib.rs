@@ -5,8 +5,9 @@
 // use ink_core::env2::call::FromAccountId;
 use ink_core::storage;
 use ink_lang2 as ink;
+use sha2::{Digest, Sha256};
 
-// use mintable::Mintable;
+use mintable::Mintable;
 
 type Bytes = [u8; 32];
 
@@ -52,15 +53,19 @@ mod htlc {
             *self.secret_hash
         }
 
+        // #[ink(message)]
+        // fn test_sha256(&self, input: Vec<u8>) -> Bytes {
+        //     self.sha256(input.as_slice())
+        // }
+
         #[ink(message)]
         fn claim(&mut self, secret: Bytes) -> bool {
             // check timestamp
             let now = self.env().now_in_ms();
             assert!(now <= *self.expiration_in_ms);
-            // if now > *self.expiration_in_ms {
-            //     return false;
-            // }
+
             // check sha256(secret) == secret_hash
+            assert_eq!(self.sha256(&secret), *self.secret_hash);
 
             // transfer
             true
@@ -70,9 +75,21 @@ mod htlc {
         fn refund(&mut self) -> bool {
             // check tiemstamp
             let now = self.env().now_in_ms();
+            assert!(now > *self.expiration_in_ms);
 
             // transfer
             true
+        }
+
+        fn sha256(&self, input: &[u8]) -> Bytes {
+            let mut hasher = Sha256::new();
+
+            hasher.input(input);
+
+            let result = hasher.result();
+            let mut output = [0u8; 32];
+            output.copy_from_slice(&result);
+            output
         }
     }
 
