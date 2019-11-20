@@ -5,7 +5,7 @@ use ink_core::memory::string::String;
 use ink_core::storage;
 use ink_lang2 as ink;
 
-pub use crate::mintable::Mintable;
+// pub use crate::mintable::Mintable;
 
 #[ink::contract(version = "0.1.0")]
 mod mintable {
@@ -88,51 +88,48 @@ mod mintable {
         // Write
         #[ink(message)]
         fn mint(&mut self, to: AccountId, value: Balance) -> bool {
-            self._mint(to, value)
+            self._mint(to, value);
+            true
         }
 
         #[ink(message)]
         fn burn(&mut self, value: Balance) -> bool {
             let from = self.env().caller();
-            self._burn(from, value)
+            self._burn(from, value);
+            true
         }
 
         #[ink(message)]
         fn transfer(&mut self, to: AccountId, value: Balance) -> bool {
             let from = self.env().caller();
-            self._transfer(from, to, value)
+            self._transfer(from, to, value);
+            true
         }
 
         #[ink(message)]
         fn approve(&mut self, spender: AccountId, value: Balance) -> bool {
             let owner = self.env().caller();
-            self._approve(owner, spender, value)
+            self._approve(owner, spender, value);
+            true
         }
 
         #[ink(message)]
         fn transfer_from(&mut self, from: AccountId, to: AccountId, value: Balance) -> bool {
+            self._transfer(from, to, value);
+
             let spender = self.env().caller();
-
             let allowance = self.allowance_of_or_zero(&from, &spender);
-            if allowance < value {
-                return false;
-            }
-            self.allowances.insert((from, spender), allowance - value);
+            assert!(allowance >= value);
 
-            self._transfer(from, to, value)
+            self._approve(from, spender, allowance - value);
+            true
         }
 
         // pure rust below
-        fn _mint(&mut self, to: AccountId, value: Balance) -> bool {
+        fn _mint(&mut self, to: AccountId, value: Balance) {
             let minter = self.env().caller();
-
-            if minter != *self.minter {
-                return false;
-            }
-
-            if value == 0 {
-                return false;
-            }
+            assert_eq!(minter, *self.minter);
+            assert_ne!(value, 0);
 
             let new_supply = *self.total_supply + value;
             self.total_supply.set(new_supply);
@@ -145,19 +142,13 @@ mod mintable {
                 to: Some(to),
                 value,
             });
-
-            true
         }
 
-        fn _burn(&mut self, from: AccountId, value: Balance) -> bool {
-            if value == 0 {
-                return false;
-            }
-
+        fn _burn(&mut self, from: AccountId, value: Balance) {
+            assert!(value > 0);
             let from_balance = self.balance_of_or_zero(&from);
-            if from_balance < value {
-                return false;
-            }
+            assert!(from_balance >= value);
+
             self.balances.insert(from.clone(), from_balance - value);
 
             self.env().emit_event(Transfer {
@@ -165,17 +156,14 @@ mod mintable {
                 to: None,
                 value,
             });
-            true
         }
 
-        fn _transfer(&mut self, from: AccountId, to: AccountId, value: Balance) -> bool {
+        fn _transfer(&mut self, from: AccountId, to: AccountId, value: Balance) {
             let from_balance = self.balance_of_or_zero(&from);
-            if from_balance < value {
-                return false;
-            }
-            let to_balance = self.balance_of_or_zero(&to);
-
+            assert!(from_balance >= value);
             self.balances.insert(from.clone(), from_balance - value);
+
+            let to_balance = self.balance_of_or_zero(&to);
             self.balances.insert(to.clone(), to_balance + value);
 
             self.env().emit_event(Transfer {
@@ -183,10 +171,9 @@ mod mintable {
                 to: Some(to),
                 value,
             });
-            true
         }
 
-        fn _approve(&mut self, owner: AccountId, spender: AccountId, value: Balance) -> bool {
+        fn _approve(&mut self, owner: AccountId, spender: AccountId, value: Balance) {
             self.allowances.insert((owner, spender), value);
 
             self.env().emit_event(Approval {
@@ -194,8 +181,6 @@ mod mintable {
                 spender,
                 value,
             });
-
-            true
         }
 
         fn balance_of_or_zero(&self, owner: &AccountId) -> Balance {
@@ -210,6 +195,15 @@ mod mintable {
     #[cfg(test)]
     mod tests {
         use super::*;
+
+        #[should_panic(expected = "from_balance >= value")]
+        #[test]
+        fn burn_twice_should_panic() {
+            let mut mintable = Mintable::new(String::from("Test"));
+            let value = 1000;
+            mintable.mint(AccountId::default(), value);
+            mintable.burn(value * 2);
+        }
 
         #[test]
         fn it_works() {
@@ -230,7 +224,6 @@ mod mintable {
             assert_eq!(mintable.balance_of(minter), value);
             assert_eq!(mintable.total_supply(), value);
 
-            assert_eq!(mintable.burn(value * 2), false);
             assert_eq!(mintable.balance_of(minter), value);
             assert_eq!(mintable.total_supply(), value);
 
