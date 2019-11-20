@@ -147,7 +147,7 @@ mod mintable {
         fn _burn(&mut self, from: AccountId, value: Balance) {
             assert!(value > 0);
             let from_balance = self.balance_of_or_zero(&from);
-            assert!(from_balance >= value);
+            assert!(from_balance >= value, "no enough balance to burn");
 
             self.balances.insert(from.clone(), from_balance - value);
 
@@ -160,7 +160,7 @@ mod mintable {
 
         fn _transfer(&mut self, from: AccountId, to: AccountId, value: Balance) {
             let from_balance = self.balance_of_or_zero(&from);
-            assert!(from_balance >= value);
+            assert!(from_balance >= value, "no enough balance to transfer");
             self.balances.insert(from.clone(), from_balance - value);
 
             let to_balance = self.balance_of_or_zero(&to);
@@ -196,7 +196,7 @@ mod mintable {
     mod tests {
         use super::*;
 
-        #[should_panic(expected = "from_balance >= value")]
+        #[should_panic(expected = "no enough balance to burn")]
         #[test]
         fn burn_twice_should_panic() {
             let mut mintable = Mintable::new(String::from("Test"));
