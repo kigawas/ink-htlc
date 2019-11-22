@@ -47,6 +47,7 @@ mod htlc {
             self.secret_hash.set(secret_hash);
         }
 
+        // read
         #[ink(message)]
         fn balance(&self) -> Balance {
             let this = self.env().address();
@@ -74,6 +75,16 @@ mod htlc {
         }
 
         #[ink(message)]
+        fn token(&self) -> AccountId {
+            self.token.account_id()
+        }
+
+        #[ink(message)]
+        fn amount(&self) -> Balance {
+            *self.amount
+        }
+
+        #[ink(message)]
         fn is_valid(&self) -> bool {
             self._is_valid()
         }
@@ -82,6 +93,8 @@ mod htlc {
         fn test_sha256(&self, input: Vec<u8>) -> Bytes {
             self._sha256(&input)
         }
+
+        // write
 
         #[ink(message)]
         fn claim(&mut self, secret: Vec<u8>) -> bool {
